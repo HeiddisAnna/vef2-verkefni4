@@ -1,5 +1,6 @@
-const { query } = require('./db');
+const xss = require('xss');
 const isISO8601 = require('validator/lib/isISO8601');
+const { query } = require('./db');
 
 async function getList(completed, order = 'ASC') {
   const orderString = order.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
@@ -24,7 +25,7 @@ async function findByID(id) {
       validation: [],
     };
   }
-  const q = `SELECT * FROM assignment WHERE id = $1`;  
+  const q = 'SELECT * FROM assignment WHERE id = $1';  
   const result = await query(q, [id]);
 
   return result.rows;
@@ -36,14 +37,12 @@ function isEmpty(s) {
 
 async function validate(title, position, completed, due) {
   const errors = [];
-
   if(typeof title !== 'string' || title.length < 1 || title.length > 128) {
     errors.push({
       field: 'title',
       error: 'Titill verður að vera strengur sem er 1 til 128 stafir',
     });
   }
-
   if(!isEmpty(due)) {
     if(!isISO8601(due)) {
       errors.push({
@@ -53,24 +52,28 @@ async function validate(title, position, completed, due) {
     }
   }
 
+  const thisPosition = parseInt(position, 10);
+  console.log('(!isEmpty(position)): ' + (!isEmpty(position)));
+  console.log('typeof thisPosition !== number : ' + (typeof thisPosition !== 'number'));
+  console.log('thisPosition < 0 : ' + (thisPosition < 0));
+
+  console.log('type thisPosition: ' + typeof thisPosition);
+  console.log('thisPosition: ' + thisPosition);
+
   if(!isEmpty(position)) {
-    if(typeof position !== 'number' || position < 0) {
+    if(typeof thisPosition !== 'number' || thisPosition < 0) {
       errors.push({
         field: 'position',
         error: 'Staðsetning verður að vera heiltala stærri eða jöfn 0',
       });
     }
   }
-
-  console.log('completed: ' + completed);
-  console.log('completed === true: ' + (completed === true));
   if(!(completed === true || completed === false)) {
     errors.push({
       field: 'completed',
       error: 'Lokið verður að vera boolean gildi',
     });
   }
-
   return errors;
 }
 
@@ -96,8 +99,68 @@ async function insertAssignment(title, position, completed, due) {
   };
 }
 
+async function updateByID(id, item) {
+  const result = await query('SELECT * FROM assignment where id = $1', [id]);
+
+  if (result.rows.length === 0) {
+    return {
+      success: false,
+      notFound: true,
+      validation: [],
+    };
+  }
+
+  const validationResult = validate(item.title, item.position, item.completed, item.due);
+
+  if (validationResult.length > 0) {
+    return {
+      success: false,
+      notFound: false,
+      validation: validationResult,
+    };
+  }
+
+  const changedColumns = [
+    !isEmpty(item.title) ? 'title' : null,
+    !isEmpty(item.position) ? 'position' : null,
+    !isEmpty(item.completed) ? 'completed' : null,
+    !isEmpty(item.due) ? 'due' : null,
+  ].filter(Boolean);
+
+  const changedValues = [
+    !isEmpty(item.title) ? xss(item.title) : null,
+    !isEmpty(item.position) ? xss(item.position) : null,
+    !isEmpty(item.completed) ? xss(item.completed) : null,
+    !isEmpty(item.due) ? xss(item.due) : null,
+  ].filter(Boolean);
+
+  const updates = [id, ...changedValues];
+
+  const updatedColumnsQuery =
+    changedColumns
+      .map((column, i) => `${column} = $${i + 2}`);
+
+  console.log(updates);
+  console.log(updatedColumnsQuery);
+
+  const q = `
+    UPDATE assignment
+    SET ${updatedColumnsQuery.join(', ')}
+    WHERE id = $1
+    RETURNING id, title, position, due, created, updated, completed`;
+  console.log(q);
+
+  const updateResult = await query(q, updates);
+  console.log(updateResult);
+  return {
+    success: true,
+    item: updateResult.rows[0],
+  };
+}
+
 module.exports = {
   getList,
   findByID,
   insertAssignment,
+  updateByID,
 };
