@@ -19,7 +19,7 @@ async function getList(completed, order = 'ASC') {
 async function findByID(id) {
 
   if (typeof id !== 'number') {
-    console.log('id er ekki number: ' + id);
+    console.log('id er ekki number: ' + typeof id);
     return {
       success: false,
       notFound: true,
@@ -31,6 +31,8 @@ async function findByID(id) {
 
   const q = `SELECT * FROM assignment WHERE id = $1`;
   const result = await query(q, [id]);
+
+  console.log('result.rows: ' + result.rows);
 
   return result.rows;
 

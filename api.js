@@ -9,8 +9,6 @@ function catchErrors(fn) {
   return (req, res, next) => fn(req, res, next).catch(next);
 }
 
-
-
 /* todo útfæra vefþjónustuskil */
 
 async function listRouter(req, res) {
@@ -22,13 +20,13 @@ async function listRouter(req, res) {
 async function findID(req, res) {
   const { id } = req.params;
 
-  const result = await findByID(id);
+  const result = await findByID(parseInt(id, 10));
 
   if (!result.success && result.notFound) {
     return res.status(404).json({ error: 'Item not found' });
   }
-  if (!result.success && result.validation.length > 0) {
-    return res.status(400).json(result.validation);
+  if (!result.success && result.length === 0) {
+    return res.status(400).json({ error: 'Verkefnið er ekki til' });
   }
   res.status(200).json(result);
 }
