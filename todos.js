@@ -65,6 +65,7 @@ async function validate(title, position, completed, due) {
       error: 'Lokið verður að vera boolean gildi',
     });
   }
+
   return errors;
 }
 
@@ -77,7 +78,7 @@ async function insertAssignment(title, position, completed = false, due) {
       notFound: false,
       validation: validationResult,
     };
-  } 
+  }
   const changedValues = [xss(title), xss(position), xss(due), completed];
 
   const q = `INSERT INTO assignment
@@ -94,8 +95,14 @@ async function insertAssignment(title, position, completed = false, due) {
 }
 
 async function updateByID(id, item) {
+  if (isNaN(id)) { // eslint-disable-line
+    return {
+      success: false,
+      notFound: true,
+      validation: [],
+    };
+  }
   const result = await query('SELECT * FROM assignment where id = $1', [id]);
-
   if (result.rows.length === 0) {
     return {
       success: false,
@@ -103,33 +110,33 @@ async function updateByID(id, item) {
       validation: [],
     };
   }
+  const validationResult = await validate(item.title, item.position, item.completed, item.due);
 
-  const validationResult = validate(item.title, item.position, item.completed, item.due);
-
-  if (validationResult.length > 0) {
+  if (validationResult.length > 0 || result.rows.length === 0) {
     return {
       success: false,
       notFound: false,
       validation: validationResult,
     };
   }
-
   const changedColumns = [
     !isEmpty(item.title) ? 'title' : null,
     !isEmpty(item.position) ? 'position' : null,
-    !isEmpty(item.completed) ? 'completed' : null,
     !isEmpty(item.due) ? 'due' : null,
+    !isEmpty(item.completed) ? 'completed' : null,
   ].filter(Boolean);
 
   const changedValues = [
     !isEmpty(item.title) ? xss(item.title) : null,
     !isEmpty(item.position) ? xss(item.position) : null,
-    !isEmpty(item.completed) ? xss(item.completed) : null,
     !isEmpty(item.due) ? xss(item.due) : null,
   ].filter(Boolean);
 
-  const updates = [id, ...changedValues];
+  if (item.completed === true || item.completed === false) {
+    changedValues.push(item.completed);
+  }
 
+  const updates = [id, ...changedValues];
   const updatedColumnsQuery = changedColumns.map((column, i) => `${column} = $${i + 2}`);
 
   const q = `
@@ -146,6 +153,13 @@ async function updateByID(id, item) {
 }
 
 async function deletByID(id) {
+  if (isNaN(id)) { // eslint-disable-line
+    return {
+      success: false,
+      notFound: true,
+      validation: [],
+    };
+  }
   const findID = await query('SELECT * FROM assignment where id = $1', [id]);
   if (findID.rows.length === 0) {
     return {

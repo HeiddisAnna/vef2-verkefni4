@@ -48,6 +48,10 @@ async function updateID(req, res) {
   if (!result.success && result.validation.length > 0) {
     return res.status(400).json(result.validation);
   }
+  if (!result.success && result.notFound) {
+    return res.status(404).json({ error: 'Item not found' });
+  }
+
   return res.status(200).json(result.item);
 }
 
