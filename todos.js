@@ -77,12 +77,15 @@ async function insertAssignment(title, position, completed = false, due) {
       notFound: false,
       validation: validationResult,
     };
-  }
+  } 
+  const changedValues = [xss(title), xss(position), xss(due), completed];
+
   const q = `INSERT INTO assignment
-  (title, position, completed, due)
+  (title, position, due, completed)
   VALUES
   ($1, $2, $3, $4) RETURNING id, title, position, due, created, updated, completed `;
-  const item = await query(q, [title, position, completed, due]);
+
+  const item = await query(q, changedValues);
 
   return {
     success: true,
