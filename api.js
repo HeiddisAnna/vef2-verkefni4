@@ -66,8 +66,6 @@ async function deleteItem(req, res) {
   return res.status(204).end();
 }
 
-// TEST
-
 router.get('/', catchErrors(listRouter));
 router.post('/', catchErrors(post));
 router.get('/:id', catchErrors(findID));

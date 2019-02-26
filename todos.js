@@ -169,6 +169,8 @@ async function deletByID(id) {
     };
   }
 
+  // TEST
+
   const q = 'DELETE FROM assignment WHERE id = $1';
   const result = await query(q, [id]); // eslint-disable-line
   return {
