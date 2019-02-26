@@ -16,6 +16,27 @@ async function getList(completed, order = 'ASC') {
   return result.rows;
 }
 
+async function findByID(id) {
+
+  if (typeof id !== 'number') {
+    console.log('id er ekki number: ' + id);
+    return {
+      success: false,
+      notFound: true,
+      validation: [],
+    };
+  }
+
+  console.log('fer inn í ID');
+
+  const q = `SELECT * FROM assignment WHERE id = $1`;
+  const result = await query(q, [id]);
+
+  return result.rows;
+
+}
+
 module.exports = {
   getList,
+  findByID,
 };
