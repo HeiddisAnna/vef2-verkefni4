@@ -1,4 +1,5 @@
 const express = require('express');
+const { getList } = require('./todos');
 
 /* todo importa frá todos.js */
 
@@ -9,5 +10,17 @@ function catchErrors(fn) {
 }
 
 /* todo útfæra vefþjónustuskil */
+
+async function listRouter(req, res) {
+  const { order, completed } = req.query;
+
+  const result = await getList(completed, order);
+
+  console.log(result);
+
+  res.status(200).json(result);
+}
+
+router.get('/', catchErrors(listRouter));
 
 module.exports = router;
