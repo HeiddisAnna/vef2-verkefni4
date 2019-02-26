@@ -6,12 +6,12 @@ async function getList(completed, order = 'ASC') {
   const orderString = order.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
 
   if (completed === 'false' || completed === 'true') {
-    const completedQ = `SELECT * FROM assignment WHERE completed = $1 ORDER BY position ${ orderString }`;
+    const completedQ = `SELECT * FROM assignment WHERE completed = $1 ORDER BY position ${orderString}`;
     const completedResult = await query(completedQ, [completed]);
     return completedResult.rows;
   }
 
-  const q = `SELECT * FROM assignment ORDER BY position ${ orderString }`;
+  const q = `SELECT * FROM assignment ORDER BY position ${orderString}`;
   const result = await query(q, []);
 
   return result.rows;
@@ -25,9 +25,8 @@ async function findByID(id) {
       validation: [],
     };
   }
-  const q = 'SELECT * FROM assignment WHERE id = $1';  
+  const q = 'SELECT * FROM assignment WHERE id = $1';
   const result = await query(q, [id]);
-
   return result.rows;
 }
 
@@ -37,38 +36,30 @@ function isEmpty(s) {
 
 async function validate(title, position, completed, due) {
   const errors = [];
-  if(typeof title !== 'string' || title.length < 1 || title.length > 128) {
+  if (typeof title !== 'string' || title.length < 1 || title.length > 128) {
     errors.push({
       field: 'title',
       error: 'Titill verður að vera strengur sem er 1 til 128 stafir',
     });
   }
-  if(!isEmpty(due)) {
-    if(!isISO8601(due)) {
+  if (!isEmpty(due)) {
+    if (!isISO8601(due)) {
       errors.push({
         field: 'due',
         error: 'Dagsetning verður að vera gild ISO 8601 dagsetning',
       });
     }
   }
-
   const thisPosition = parseInt(position, 10);
-  console.log('(!isEmpty(position)): ' + (!isEmpty(position)));
-  console.log('typeof thisPosition !== number : ' + (typeof thisPosition !== 'number'));
-  console.log('thisPosition < 0 : ' + (thisPosition < 0));
-
-  console.log('type thisPosition: ' + typeof thisPosition);
-  console.log('thisPosition: ' + thisPosition);
-
-  if(!isEmpty(position)) {
-    if(typeof thisPosition !== 'number' || thisPosition < 0) {
+  if (!isEmpty(position)) {
+    if (typeof thisPosition !== 'number' || thisPosition < 0 || isNaN(thisPosition)) { // eslint-disable-line
       errors.push({
         field: 'position',
         error: 'Staðsetning verður að vera heiltala stærri eða jöfn 0',
       });
     }
   }
-  if(!(completed === true || completed === false)) {
+  if (!(completed === true || completed === false)) {
     errors.push({
       field: 'completed',
       error: 'Lokið verður að vera boolean gildi',
@@ -77,7 +68,7 @@ async function validate(title, position, completed, due) {
   return errors;
 }
 
-async function insertAssignment(title, position, completed, due) {
+async function insertAssignment(title, position, completed = false, due) {
   const validationResult = await validate(title, position, completed, due);
 
   if (validationResult.length > 0) {
@@ -136,22 +127,15 @@ async function updateByID(id, item) {
 
   const updates = [id, ...changedValues];
 
-  const updatedColumnsQuery =
-    changedColumns
-      .map((column, i) => `${column} = $${i + 2}`);
-
-  console.log(updates);
-  console.log(updatedColumnsQuery);
+  const updatedColumnsQuery = changedColumns.map((column, i) => `${column} = $${i + 2}`);
 
   const q = `
     UPDATE assignment
-    SET ${updatedColumnsQuery.join(', ')}
+    SET ${updatedColumnsQuery.join(', ')}, updated = current_timestamp
     WHERE id = $1
     RETURNING id, title, position, due, created, updated, completed`;
-  console.log(q);
 
   const updateResult = await query(q, updates);
-  console.log(updateResult);
   return {
     success: true,
     item: updateResult.rows[0],
@@ -169,7 +153,7 @@ async function deletByID(id) {
   }
 
   const q = 'DELETE FROM assignment WHERE id = $1';
-  const result = await query(q, [id]);
+  const result = await query(q, [id]); // eslint-disable-line
   return {
     success: true,
     notFound: false,
@@ -182,5 +166,5 @@ module.exports = {
   findByID,
   insertAssignment,
   updateByID,
-  deletByID, 
+  deletByID,
 };

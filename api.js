@@ -37,7 +37,7 @@ async function findID(req, res) {
   if (!result.success && result.length === 0) {
     return res.status(400).json({ error: 'Verkefnið er ekki til' });
   }
-  res.status(200).json(result);
+  return res.status(200).json(result);
 }
 
 async function updateID(req, res) {
@@ -65,7 +65,7 @@ async function deleteItem(req, res) {
 router.get('/', catchErrors(listRouter));
 router.post('/', catchErrors(post));
 router.get('/:id', catchErrors(findID));
-router.post('/:id', catchErrors(updateID));
+router.patch('/:id', catchErrors(updateID));
 router.delete('/:id', catchErrors(deleteItem));
 
 module.exports = router;
