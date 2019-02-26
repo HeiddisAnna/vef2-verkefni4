@@ -1,5 +1,5 @@
 const { query } = require('./db');
-
+const isISO8601 = require('validator/lib/isISO8601');
 
 async function getList(completed, order = 'ASC') {
   const orderString = order.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
@@ -44,17 +44,38 @@ async function validate(title, position, completed, due) {
     });
   }
 
-  console.log('errors er: ' + errors);
-  console.log('errors length er: ' + errors.length);
-  console.log('errors error er: ' + errors[0].error);
+  if(!isEmpty(due)) {
+    if(!isISO8601(due)) {
+      errors.push({
+        field: 'due',
+        error: 'Dagsetning verður að vera gild ISO 8601 dagsetning',
+      });
+    }
+  }
+
+  if(!isEmpty(position)) {
+    if(typeof position !== 'number' || position < 0) {
+      errors.push({
+        field: 'position',
+        error: 'Staðsetning verður að vera heiltala stærri eða jöfn 0',
+      });
+    }
+  }
+
+  console.log('completed: ' + completed);
+  console.log('completed === true: ' + (completed === true));
+  if(!(completed === true || completed === false)) {
+    errors.push({
+      field: 'completed',
+      error: 'Lokið verður að vera boolean gildi',
+    });
+  }
 
   return errors;
 }
 
 async function insertAssignment(title, position, completed, due) {
   const validationResult = await validate(title, position, completed, due);
-
-  console.log('validationResult.length: ' + validationResult.length);
 
   if (validationResult.length > 0) {
     return {
