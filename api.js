@@ -1,5 +1,5 @@
 const express = require('express');
-const { getList, findByID } = require('./todos');
+const { getList, findByID, insertAssignment } = require('./todos');
 
 /* todo importa frá todos.js */
 
@@ -11,6 +11,16 @@ function catchErrors(fn) {
 
 /* todo útfæra vefþjónustuskil */
 
+async function post(req, res) {
+  const { title, position, completed, due } = req.body;
+  const result = await insertAssignment(title, position, completed, due);
+
+  if (!result.success && result.validation.length > 0) {
+    return res.status(400).json(result.validation);
+  }
+  return res.status(200).json(result.item);
+}
+
 async function listRouter(req, res) {
   const { order, completed } = req.query;
   const result = await getList(completed, order);
@@ -19,7 +29,6 @@ async function listRouter(req, res) {
 
 async function findID(req, res) {
   const { id } = req.params;
-
   const result = await findByID(parseInt(id, 10));
 
   if (!result.success && result.notFound) {
@@ -32,6 +41,7 @@ async function findID(req, res) {
 }
 
 router.get('/', catchErrors(listRouter));
+router.post('/', catchErrors(post));
 router.get('/:id', catchErrors(findID));
 
 module.exports = router;
