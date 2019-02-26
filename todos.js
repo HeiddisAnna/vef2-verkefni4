@@ -158,9 +158,29 @@ async function updateByID(id, item) {
   };
 }
 
+async function deletByID(id) {
+  const findID = await query('SELECT * FROM assignment where id = $1', [id]);
+  if (findID.rows.length === 0) {
+    return {
+      success: false,
+      notFound: true,
+      validation: [],
+    };
+  }
+
+  const q = 'DELETE FROM assignment WHERE id = $1';
+  const result = await query(q, [id]);
+  return {
+    success: true,
+    notFound: false,
+    validation: [],
+  };
+}
+
 module.exports = {
   getList,
   findByID,
   insertAssignment,
   updateByID,
+  deletByID, 
 };

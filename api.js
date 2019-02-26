@@ -1,5 +1,5 @@
 const express = require('express');
-const { getList, findByID, insertAssignment, updateByID } = require('./todos');
+const { getList, findByID, insertAssignment, updateByID, deletByID } = require('./todos');
 
 /* todo importa frá todos.js */
 
@@ -43,8 +43,6 @@ async function findID(req, res) {
 async function updateID(req, res) {
   const { id } = req.params;
   const { title, position, completed, due } = req.body;
-
-  
   const result = await updateByID(parseInt(id, 10), { title, position, completed, due });
 
   if (!result.success && result.validation.length > 0) {
@@ -53,9 +51,21 @@ async function updateID(req, res) {
   return res.status(200).json(result.item);
 }
 
+async function deleteItem(req, res) {
+  const { id } = req.params;
+
+  const result = await deletByID(parseInt(id, 10));
+
+  if (!result.success && result.notFound) {
+    return res.status(404).json({ error: 'Item not found' });
+  }
+  return res.status(204).end();
+}
+
 router.get('/', catchErrors(listRouter));
 router.post('/', catchErrors(post));
 router.get('/:id', catchErrors(findID));
 router.post('/:id', catchErrors(updateID));
+router.delete('/:id', catchErrors(deleteItem));
 
 module.exports = router;
